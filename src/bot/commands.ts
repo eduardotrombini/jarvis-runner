@@ -28,7 +28,14 @@ export function setupCommands(bot: Bot<Context>) {
         waitingForName.add(telegramId);
         await ctx.reply('Qual é o seu nome?');
       } else {
-        await ctx.reply(`🏃 Olá, ${user.firstname}! Sou o Jarvis, seu coach de corrida!\n\nUse /help para ver os comandos.`);
+        let msg = `🏃 Olá, ${user.firstname}! Sou o Jarvis, seu coach de corrida!\n\n`;
+        
+        if (!user.strava_athlete_id) {
+          msg += `⚠️ Você ainda não conectou o Strava!\n\nConecte com /connectstrava para desbloquear todos os recursos!\n\n`;
+        }
+        
+        msg += 'Use /help para ver os comandos.';
+        await ctx.reply(msg);
       }
     } else {
       const firstname = ctx.from?.first_name || 'Corredor';
