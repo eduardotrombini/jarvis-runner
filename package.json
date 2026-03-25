@@ -11,6 +11,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@grammyjs/conversations": "^2.1.1",
     "@grammyjs/runner": "^2.0.3",
     "@supabase/supabase-js": "^2.100.0",
     "axios": "^1.6.0",

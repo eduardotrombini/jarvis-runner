@@ -22,6 +22,18 @@ export async function createUserOnStart(telegramId: number, firstname: string, l
   return data.id;
 }
 
+export async function updateUserName(telegramId: number, firstname: string): Promise<void> {
+  const { error } = await supabase
+    .from('users')
+    .update({ firstname })
+    .eq('telegram_id', telegramId);
+
+  if (error) {
+    logger.error('Error updating user name:', error);
+    throw error;
+  }
+}
+
 export async function saveUser(user: Omit<User, 'id' | 'created_at'>): Promise<number> {
   const { data, error } = await supabase
     .from('users')

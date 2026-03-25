@@ -9,16 +9,55 @@ import {
   unsubscribeUser,
   isUserSubscribed,
   saveActivities,
-  createUserOnStart
+  createUserOnStart,
+  updateUserName
 } from '../database/userService';
 import { setPendingAuth } from '../server/webhook';
 
+const waitingForName = new Set<number>();
+
 export function setupCommands(bot: Bot<Context>) {
   bot.command('start', async (ctx) => {
-    const from = ctx.from;
-    const firstname = from?.first_name || 'Corredor';
+    const telegramId = ctx.from?.id;
+    if (!telegramId) return;
     
-    await ctx.reply(`🏃 Olá, ${firstname}! Sou o Jarvis, seu coach de corrida!\n\nUse /help para ver os comandos.`);
+    const user = await getUserByTelegramId(telegramId);
+    
+    if (user) {
+      if (!user.firstname || user.firstname === 'Corredor') {
+        waitingForName.add(telegramId);
+        await ctx.reply('Qual é o seu nome?');
+      } else {
+        await ctx.reply(`🏃 Olá, ${user.firstname}! Sou o Jarvis, seu coach de corrida!\n\nUse /help para ver os comandos.`);
+      }
+    } else {
+      const firstname = ctx.from?.first_name || 'Corredor';
+      await createUserOnStart(telegramId, firstname);
+      waitingForName.add(telegramId);
+      await ctx.reply(`🏃 Olá! Sou o Jarvis, seu coach de corrida!\n\nComo gostaria de ser chamado?`);
+    }
+  });
+
+  bot.on('message:text', async (ctx) => {
+    const telegramId = ctx.from?.id;
+    if (!telegramId || !waitingForName.has(telegramId)) return;
+    
+    const name = ctx.message.text.trim();
+    if (name.length < 2 || name.length > 50) {
+      await ctx.reply('Por favor, digite um nome válido (2-50 caracteres).');
+      return;
+    }
+    
+    waitingForName.delete(telegramId);
+    
+    const user = await getUserByTelegramId(telegramId);
+    if (user) {
+      await updateUserName(telegramId, name);
+    } else {
+      await createUserOnStart(telegramId, name);
+    }
+    
+    await ctx.reply(`🏃 Prazer, ${name}! Sou o Jarvis, seu coach de corrida!\n\nConecte seu Strava com /connectstrava para desbloquear todos os recursos!\n\nUse /help para ver todos os comandos.`);
   });
 
   bot.command('help', async (ctx) => {
