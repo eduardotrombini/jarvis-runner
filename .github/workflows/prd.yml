@@ -19,18 +19,17 @@ jobs:
           host: ${{ secrets.PRD_HOST }}
           username: ${{ secrets.PRD_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
-          envs: TELEGRAM_BOT_TOKEN,STRAVA_CLIENT_ID,STRAVA_CLIENT_SECRET,STRAVA_REFRESH_TOKEN,SUPABASE_URL,SUPABASE_KEY,CALLBACK_URL
           script: |
             sudo git config --global --add safe.directory /opt/jarvis-runner
             cd /opt/jarvis-runner
             sudo tee .env > /dev/null << 'EOF'
-            TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN
-            STRAVA_CLIENT_ID=$STRAVA_CLIENT_ID
-            STRAVA_CLIENT_SECRET=$STRAVA_CLIENT_SECRET
-            STRAVA_REFRESH_TOKEN=$STRAVA_REFRESH_TOKEN
-            SUPABASE_URL=$SUPABASE_URL
-            SUPABASE_KEY=$SUPABASE_KEY
-            CALLBACK_URL=$CALLBACK_URL
+            TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
+            STRAVA_CLIENT_ID=${{ secrets.STRAVA_CLIENT_ID }}
+            STRAVA_CLIENT_SECRET=${{ secrets.STRAVA_CLIENT_SECRET }}
+            STRAVA_REFRESH_TOKEN=${{ secrets.STRAVA_REFRESH_TOKEN }}
+            SUPABASE_URL=${{ secrets.SUPABASE_URL }}
+            SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
+            CALLBACK_URL=${{ secrets.CALLBACK_URL }}
             PORT=3001
             NODE_ENV=production
             EOF
