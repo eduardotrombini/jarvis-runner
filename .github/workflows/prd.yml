@@ -29,7 +29,7 @@ jobs:
             STRAVA_REFRESH_TOKEN=${{ secrets.STRAVA_REFRESH_TOKEN }}
             SUPABASE_URL=${{ secrets.SUPABASE_URL }}
             SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
-            CALLBACK_URL=http://129.80.194.194:3002
+            CALLBACK_URL=http://jarvisbot.sytes.net
             PORT=3001
             NODE_ENV=production
             EOF
