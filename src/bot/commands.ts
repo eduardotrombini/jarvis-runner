@@ -15,34 +15,10 @@ import { setPendingAuth } from '../server/webhook';
 
 export function setupCommands(bot: Bot<Context>) {
   bot.command('start', async (ctx) => {
-    const telegramId = ctx.from?.id;
-    if (!telegramId) return;
+    const from = ctx.from;
+    const firstname = from?.first_name || 'Corredor';
     
-    const user = await getUserByTelegramId(telegramId);
-    
-    if (user) {
-      const subscribed = await isUserSubscribed(telegramId);
-      let msg = `🏃 Olá, ${user.firstname}! Bem-vindo de volta!\n\n`;
-      if (user.strava_athlete_id) {
-        msg += 'Seu Strava já está conectado.';
-      } else {
-        msg += 'Conecte seu Strava com /connectstrava para desbloquear todos os recursos!';
-      }
-      if (subscribed) {
-        msg += '\n\n🔔 Você está inscrito para receber treinos diários.';
-      }
-      msg += '\n\nUse /help para ver os comandos.';
-      await ctx.reply(msg);
-    } else {
-      const from = ctx.from;
-      const firstname = from?.first_name || 'Corredor';
-      const lastname = from?.last_name;
-      const username = from?.username;
-      
-      await createUserOnStart(telegramId, firstname, lastname, username);
-      
-      await ctx.reply(`🏃 Olá, ${firstname}! Sou o Jarvis, seu coach de corrida!\n\nPara desbloquear todos os recursos, conecte seu Strava com o comando:\n\n/connectstrava\n\nUse /help para ver todos os comandos.`);
-    }
+    await ctx.reply(`🏃 Olá, ${firstname}! Sou o Jarvis, seu coach de corrida!\n\nUse /help para ver os comandos.`);
   });
 
   bot.command('help', async (ctx) => {
