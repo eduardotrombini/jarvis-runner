@@ -18,8 +18,18 @@ jobs:
           host: ${{ secrets.PRD_HOST }}
           username: ${{ secrets.PRD_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: TELEGRAM_BOT_TOKEN,STRAVA_CLIENT_ID,STRAVA_CLIENT_SECRET,STRAVA_REFRESH_TOKEN,SUPABASE_URL,SUPABASE_KEY,CALLBACK_URL
           script: |
             cd /opt/jarvis-runner
+            echo "TELEGRAM_BOT_TOKEN=$TELEGRAM_BOT_TOKEN" > .env
+            echo "STRAVA_CLIENT_ID=$STRAVA_CLIENT_ID" >> .env
+            echo "STRAVA_CLIENT_SECRET=$STRAVA_CLIENT_SECRET" >> .env
+            echo "STRAVA_REFRESH_TOKEN=$STRAVA_REFRESH_TOKEN" >> .env
+            echo "SUPABASE_URL=$SUPABASE_URL" >> .env
+            echo "SUPABASE_KEY=$SUPABASE_KEY" >> .env
+            echo "CALLBACK_URL=$CALLBACK_URL" >> .env
+            echo "PORT=3001" >> .env
+            echo "NODE_ENV=production" >> .env
             git pull origin main
             docker-compose -f docker-compose.prd.yml down
             docker-compose -f docker-compose.prd.yml build --no-cache
