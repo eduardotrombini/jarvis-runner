@@ -13,11 +13,15 @@ bot.catch((err) => {
   logger.error('Bot error:', err);
 });
 
+bot.on('message', async (ctx) => {
+  logger.info(`Received message from ${ctx.from?.id}: ${ctx.message?.text}`);
+});
+
 setupCommands(bot);
 setupCallbacks(bot);
 
 bot.use(async (ctx, next) => {
-  logger.info(`Update from ${ctx.from?.id}`);
+  logger.info(`Update from ${ctx.from?.id} - type: ${ctx.update.message ? 'message' : 'other'}`);
   await next();
 });
 
