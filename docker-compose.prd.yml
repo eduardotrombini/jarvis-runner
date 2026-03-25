@@ -1,0 +1,35 @@
+services:
+  jarvis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - STRAVA_CLIENT_ID=${STRAVA_CLIENT_ID}
+      - STRAVA_CLIENT_SECRET=${STRAVA_CLIENT_SECRET}
+      - STRAVA_REFRESH_TOKEN=${STRAVA_REFRESH_TOKEN}
+      - SUPABASE_URL=${SUPABASE_URL_PRD}
+      - SUPABASE_KEY=${SUPABASE_KEY_PRD}
+    restart: always
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=jarvis
+    volumes:
+      - jarvis_db_data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  jarvis_db_data:
+
+networks:
+  default:
+    name: jarvis_prd_network

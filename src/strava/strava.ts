@@ -1,0 +1,109 @@
+import axios from 'axios';
+import { logger } from '../utils/logger';
+
+const STRAVA_API = 'https://www.strava.com/api/v3';
+
+export interface StravaActivity {
+  id: number;
+  name: string;
+  type: string;
+  distance: number;
+  moving_time: number;
+  elapsed_time: number;
+  total_elevation_gain: number;
+  start_date: string;
+  average_speed: number;
+  max_speed: number;
+  average_heartrate?: number;
+  start_latitude: number;
+  start_longitude: number;
+}
+
+export interface StravaTokens {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
+}
+
+class StravaService {
+  private clientId: string;
+  private clientSecret: string;
+  private refreshToken: string;
+
+  constructor() {
+    this.clientId = process.env.STRAVA_CLIENT_ID || '';
+    this.clientSecret = process.env.STRAVA_CLIENT_SECRET || '';
+    this.refreshToken = process.env.STRAVA_REFRESH_TOKEN || '';
+  }
+
+  async getAccessToken(): Promise<string> {
+    try {
+      const response = await axios.post('https://www.strava.com/oauth/token', {
+        client_id: this.clientId,
+        client_secret: this.clientSecret,
+        refresh_token: this.refreshToken,
+        grant_type: 'refresh_token',
+      });
+
+      return response.data.access_token;
+    } catch (error) {
+      logger.error('Error refreshing Strava token:', error);
+      throw error;
+    }
+  }
+
+  async getActivities(daysBack: number = 7): Promise<StravaActivity[]> {
+    const accessToken = await this.getAccessToken();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - daysBack);
+
+    try {
+      const response = await axios.get(`${STRAVA_API}/athlete/activities`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+        params: {
+          after: Math.floor(startDate.getTime() / 1000),
+          per_page: 100,
+        },
+      });
+
+      return response.data;
+    } catch (error) {
+      logger.error('Error fetching Strava activities:', error);
+      throw error;
+    }
+  }
+
+  async getAthleteStats(athleteId: string) {
+    const accessToken = await this.getAccessToken();
+
+    try {
+      const response = await axios.get(
+        `${STRAVA_API}/athletes/${athleteId}/stats`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      logger.error('Error fetching athlete stats:', error);
+      throw error;
+    }
+  }
+
+  formatActivity(activity: StravaActivity): string {
+    const distanceKm = (activity.distance / 1000).toFixed(2);
+    const pace = (activity.moving_time / 60 / (activity.distance / 1000)).toFixed(2);
+    
+    return `🏃 ${activity.name}
+📏 ${distanceKm}km | ⏱️ ${Math.floor(activity.moving_time / 60)}min | 🏃‍♂️ ${pace}/km
+${activity.average_heartrate ? `💓 ${activity.average_heartrate} bpm` : ''}
+📅 ${new Date(activity.start_date).toLocaleDateString('pt-BR')}`;
+  }
+}
+
+export const stravaService = new StravaService();
