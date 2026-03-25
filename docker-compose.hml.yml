@@ -7,28 +7,15 @@ services:
       - "3001:3001"
     environment:
       - NODE_ENV=development
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN_HML}
-      - STRAVA_CLIENT_ID=${STRAVA_CLIENT_ID_HML}
-      - STRAVA_CLIENT_SECRET=${STRAVA_CLIENT_SECRET_HML}
-      - STRAVA_REFRESH_TOKEN=${STRAVA_REFRESH_TOKEN_HML}
+      - PORT=3001
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - STRAVA_CLIENT_ID=${STRAVA_CLIENT_ID}
+      - STRAVA_CLIENT_SECRET=${STRAVA_CLIENT_SECRET}
+      - STRAVA_REFRESH_TOKEN=${STRAVA_REFRESH_TOKEN}
       - SUPABASE_URL=${SUPABASE_URL_HML}
-      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY_HML}
+      - SUPABASE_KEY=${SUPABASE_ANON_KEY_HML}
+      - CALLBACK_URL=${CALLBACK_URL}
     restart: always
-    depends_on:
-      - db
-
-  db:
-    image: postgres:15-alpine
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=jarvis_hml
-    volumes:
-      - jarvis_db_data:/var/lib/postgresql/data
-    restart: always
-
-volumes:
-  jarvis_db_data:
 
 networks:
   default:

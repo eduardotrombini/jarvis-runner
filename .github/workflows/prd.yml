@@ -12,20 +12,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Login to Oracle Cloud
-        uses: oci-cli/setup-@v3
-        with:
-          oci-cli-private-key: ${{ secrets.OCI_PRIVATE_KEY }}
-          tenancy-id: ${{ secrets.OCI_TENANCY_ID }}
-          user-id: ${{ secrets.OCI_USER_ID }}
-          fingerprint: ${{ secrets.OCI_FINGERPRINT }}
-
       - name: Connect via SSH and deploy
         uses: appleboy/ssh-action@v1
         with:
           host: ${{ secrets.PRD_HOST }}
           username: ${{ secrets.PRD_USERNAME }}
-          key: ${{ secrets.PRD_SSH_KEY }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             cd /opt/jarvis-runner
             git pull origin main
