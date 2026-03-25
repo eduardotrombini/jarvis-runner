@@ -2,6 +2,26 @@ import { supabase, User, Activity, Subscription } from './supabase';
 import { StravaActivity } from '../strava/strava';
 import { logger } from '../utils/logger';
 
+export async function createUserOnStart(telegramId: number, firstname: string, lastname?: string, username?: string): Promise<number> {
+  const { data, error } = await supabase
+    .from('users')
+    .upsert({
+      telegram_id: telegramId,
+      firstname,
+      lastname: lastname || null,
+      username: username || null,
+    }, { onConflict: 'telegram_id' })
+    .select('id')
+    .single();
+
+  if (error) {
+    logger.error('Error creating user on start:', error);
+    throw error;
+  }
+
+  return data.id;
+}
+
 export async function saveUser(user: Omit<User, 'id' | 'created_at'>): Promise<number> {
   const { data, error } = await supabase
     .from('users')
