@@ -10,6 +10,16 @@ app.use(express.json());
 const pendingAuth = new Map<string, number>();
 
 export function startWebhookServer(bot: Bot, port: number = 3001) {
+  app.post('/webhook/:token', async (req, res) => {
+    try {
+      await bot.handleUpdate(req.body);
+      res.sendStatus(200);
+    } catch (err) {
+      console.error('Error handling update:', err);
+      res.sendStatus(500);
+    }
+  });
+
   app.get('/', (req, res) => {
     const startParam = req.query.start;
     if (startParam === 'connected') {

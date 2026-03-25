@@ -32,9 +32,13 @@ async function main() {
   logger.info(`Bot initialized as @${bot.botInfo.username}`);
   
   const port = parseInt(process.env.PORT || '3001');
-  startWebhookServer(bot, port);
+  const callbackUrl = process.env.CALLBACK_URL || 'http://jarvisbot.sytes.net';
   
-  run(bot);
+  const webhookUrl = `${callbackUrl}/webhook/${process.env.TELEGRAM_BOT_TOKEN}`;
+  await bot.api.setWebhook(webhookUrl);
+  logger.info(`Webhook set to: ${webhookUrl}`);
+  
+  startWebhookServer(bot, port);
   
   startScheduler();
   
