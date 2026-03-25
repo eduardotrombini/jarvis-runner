@@ -34,6 +34,6 @@ jobs:
             NODE_ENV=production
             EOF
             sudo git pull origin master
-            sudo docker compose -f docker-compose.prd.yml down || true
+            sudo docker compose -f docker-compose.prd.yml down --remove-orphans || true
             sudo docker compose -f docker-compose.prd.yml build --no-cache
             sudo docker compose -f docker-compose.prd.yml up -d
