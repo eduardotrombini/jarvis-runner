@@ -21,7 +21,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           envs: TELEGRAM_BOT_TOKEN,STRAVA_CLIENT_ID,STRAVA_CLIENT_SECRET,STRAVA_REFRESH_TOKEN,SUPABASE_URL,SUPABASE_KEY,CALLBACK_URL
           script: |
-            sudo apt-get update && sudo apt-get install -y docker.io docker-compose
+            sudo apt-get update
+            sudo apt-get install -y docker-compose-plugin || sudo apt-get install -y docker-compose
             sudo git config --global --add safe.directory /opt/jarvis-runner
             cd /opt/jarvis-runner
             sudo tee .env > /dev/null << 'EOF'
@@ -35,7 +36,7 @@ jobs:
             PORT=3001
             NODE_ENV=production
             EOF
-            sudo git pull origin main
-            sudo docker-compose -f docker-compose.prd.yml down || true
-            sudo docker-compose -f docker-compose.prd.yml build --no-cache
-            sudo docker-compose -f docker-compose.prd.yml up -d
+            sudo git pull origin master
+            sudo docker compose -f docker-compose.prd.yml down || true
+            sudo docker compose -f docker-compose.prd.yml build --no-cache
+            sudo docker compose -f docker-compose.prd.yml up -d
