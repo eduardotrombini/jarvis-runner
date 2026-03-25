@@ -1,7 +1,7 @@
 import cron from 'node-cron';
-import { stravaService } from '../strava/strava';
-import { logger } from '../utils/logger';
-import { generateDailyTraining } from '../services/training';
+import { stravaService } from './strava/strava';
+import { logger } from './utils/logger';
+import { generateDailyTraining } from './services/training';
 
 export function startScheduler() {
   cron.schedule('0 7 * * *', async () => {

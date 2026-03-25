@@ -1,8 +1,10 @@
+import 'dotenv/config';
 import { Bot } from 'grammy';
 import { run } from '@grammyjs/runner';
 import { setupCommands } from './bot/commands';
 import { setupCallbacks } from './bot/callbacks';
 import { startScheduler } from './scheduler';
+import { startWebhookServer } from './server/webhook';
 import { logger } from './utils/logger';
 
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN || '');
@@ -11,7 +13,7 @@ setupCommands(bot);
 setupCallbacks(bot);
 
 bot.use(async (ctx, next) => {
-  logger.info(`Update from ${ctx.from?.id}: ${ctx.updateType}`);
+  logger.info(`Update from ${ctx.from?.id}`);
   await next();
 });
 
@@ -21,11 +23,14 @@ async function main() {
   await bot.init();
   logger.info(`Bot initialized as @${bot.botInfo.username}`);
   
+  const port = parseInt(process.env.PORT || '3001');
+  startWebhookServer(bot, port);
+  
   run(bot);
   
   startScheduler();
   
-  logger.info('Jarvis Runner is running!');
+  logger.info(`Jarvis Runner is running on port ${port}!`);
 }
 
 main().catch((err) => {

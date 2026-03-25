@@ -97,12 +97,42 @@ class StravaService {
 
   formatActivity(activity: StravaActivity): string {
     const distanceKm = (activity.distance / 1000).toFixed(2);
-    const pace = (activity.moving_time / 60 / (activity.distance / 1000)).toFixed(2);
+    const pace = activity.distance > 0 
+      ? (activity.moving_time / 60 / (activity.distance / 1000)).toFixed(2)
+      : '0.00';
     
     return `🏃 ${activity.name}
 📏 ${distanceKm}km | ⏱️ ${Math.floor(activity.moving_time / 60)}min | 🏃‍♂️ ${pace}/km
 ${activity.average_heartrate ? `💓 ${activity.average_heartrate} bpm` : ''}
 📅 ${new Date(activity.start_date).toLocaleDateString('pt-BR')}`;
+  }
+
+  formatWeeklySummary(activities: StravaActivity[]): string {
+    const totalDistance = activities.reduce((sum, a) => sum + a.distance, 0) / 1000;
+    const totalTime = activities.reduce((sum, a) => sum + a.moving_time, 0) / 60;
+    const totalElevation = activities.reduce((sum, a) => sum + a.total_elevation_gain, 0);
+    const runCount = activities.filter(a => a.type === 'Run').length;
+
+    return `📊 *Resumo da Semana*
+
+🏃‍♂️ Corridas: ${runCount}
+📏 Distância: ${totalDistance.toFixed(1)} km
+⏱️ Tempo: ${Math.floor(totalTime)} min
+📈 Elevação: ${totalElevation.toFixed(0)} m`;
+  }
+
+  formatMonthlySummary(activities: StravaActivity[]): string {
+    const totalDistance = activities.reduce((sum, a) => sum + a.distance, 0) / 1000;
+    const totalTime = activities.reduce((sum, a) => sum + a.moving_time, 0) / 60;
+    const totalElevation = activities.reduce((sum, a) => sum + a.total_elevation_gain, 0);
+    const runCount = activities.filter(a => a.type === 'Run').length;
+
+    return `📊 *Resumo do Mês*
+
+🏃‍♂️ Corridas: ${runCount}
+📏 Distância: ${totalDistance.toFixed(1)} km
+⏱️ Tempo: ${Math.floor(totalTime)} min
+📈 Elevação: ${totalElevation.toFixed(0)} m`;
   }
 }
 
