@@ -10,6 +10,35 @@ app.use(express.json());
 const pendingAuth = new Map<string, number>();
 
 export function startWebhookServer(bot: Bot, port: number = 3001) {
+  app.get('/', (req, res) => {
+    const startParam = req.query.start;
+    if (startParam === 'connected') {
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta http-equiv="refresh" content="0;url=tg://resolve?domain=Barirunner_treinador_bot">
+        </head>
+        <body>
+          <p>Redirecionando para o Telegram...</p>
+        </body>
+        </html>
+      `);
+    } else {
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta http-equiv="refresh" content="0;url=tg://resolve?domain=Barirunner_treinador_bot&start=start">
+        </head>
+        <body>
+          <p>Redirecionando para o Jarvis...</p>
+        </body>
+        </html>
+      `);
+    }
+  });
+
   app.get('/strava/callback', async (req, res) => {
     const { code, state } = req.query;
 
@@ -62,11 +91,25 @@ export function startWebhookServer(bot: Bot, port: number = 3001) {
         await saveActivities(user.id, activities);
       }
 
-      await bot.api.sendMessage(telegramId, `✅ Strava conectado com sucesso!\n\n👤 ${athlete.firstname} ${athlete.lastname}\n\nUse /start para ver sua saudação!`);
+      const activityCount = activities.length;
+      
+      await bot.api.sendMessage(telegramId, `✅ Strava conectado com sucesso!\n\n👤 ${athlete.firstname} ${athlete.lastname}\n\n🔄 Buscando seus últimos ${activityCount} treinos...\n\nUse /analyze para ver sua análise!`);
 
       pendingAuth.delete(code as string);
 
-      res.send('✅ <b>Strava conectado com sucesso!</b><br/>Volte ao Telegram e use /start');
+      res.send(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta http-equiv="refresh" content="3;url=tg://resolve?domain=Barirunner_treinador_bot&start=connected">
+        </head>
+        <body style="font-family: Arial; text-align: center; padding: 50px;">
+          <h2>✅ Strava conectado com sucesso!</h2>
+          <p>Você receberá uma mensagem no Telegram em alguns segundos...</p>
+          <p><a href="tg://resolve?domain=Barirunner_treinador_bot&start=connected">Clique aqui para abrir o Telegram</a></p>
+        </body>
+        </html>
+      `);
     } catch (error) {
       console.error('OAuth callback error:', error);
       res.send('❌ Erro ao conectar Strava. Tente novamente.');
