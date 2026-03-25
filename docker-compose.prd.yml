@@ -12,7 +12,7 @@ services:
       - STRAVA_CLIENT_SECRET=${STRAVA_CLIENT_SECRET}
       - STRAVA_REFRESH_TOKEN=${STRAVA_REFRESH_TOKEN}
       - SUPABASE_URL=${SUPABASE_URL_PRD}
-      - SUPABASE_KEY=${SUPABASE_KEY_PRD}
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY_PRD}
     restart: always
     depends_on:
       - db
