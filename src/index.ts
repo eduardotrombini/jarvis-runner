@@ -9,6 +9,10 @@ import { logger } from './utils/logger';
 
 const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN || '');
 
+bot.catch((err) => {
+  logger.error('Bot error:', err);
+});
+
 setupCommands(bot);
 setupCallbacks(bot);
 
