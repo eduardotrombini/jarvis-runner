@@ -198,3 +198,31 @@ export async function isUserSubscribed(telegramId: number): Promise<boolean> {
 
   return !!data;
 }
+
+export async function getSubscribedUsers(): Promise<User[]> {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select(`
+      user:user_id (
+        id,
+        telegram_id,
+        strava_athlete_id,
+        firstname,
+        lastname,
+        username,
+        access_token,
+        refresh_token,
+        expires_at
+      )
+    `)
+    .eq('active', true);
+
+  if (error) {
+    logger.error('Error fetching subscribed users:', error);
+    return [];
+  }
+
+  // @ts-ignore - mapping nested join result
+  return data.map(d => d.user).filter(Boolean) as User[];
+}
+

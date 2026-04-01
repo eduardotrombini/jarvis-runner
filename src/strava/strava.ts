@@ -36,12 +36,17 @@ class StravaService {
     this.refreshToken = process.env.STRAVA_REFRESH_TOKEN || '';
   }
 
-  async getAccessToken(): Promise<string> {
+  async getAccessToken(refreshToken?: string): Promise<string> {
     try {
+      const rt = refreshToken || this.refreshToken;
+      if (!rt) {
+        throw new Error('No refresh token provided');
+      }
+
       const response = await axios.post('https://www.strava.com/oauth/token', {
         client_id: this.clientId,
         client_secret: this.clientSecret,
-        refresh_token: this.refreshToken,
+        refresh_token: rt,
         grant_type: 'refresh_token',
       });
 
@@ -52,8 +57,8 @@ class StravaService {
     }
   }
 
-  async getActivities(daysBack: number = 7): Promise<StravaActivity[]> {
-    const accessToken = await this.getAccessToken();
+  async getActivities(daysBack: number = 7, refreshToken?: string): Promise<StravaActivity[]> {
+    const accessToken = await this.getAccessToken(refreshToken);
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysBack);
 
@@ -75,8 +80,8 @@ class StravaService {
     }
   }
 
-  async getAthleteStats(athleteId: string) {
-    const accessToken = await this.getAccessToken();
+  async getAthleteStats(athleteId: string, refreshToken?: string) {
+    const accessToken = await this.getAccessToken(refreshToken);
 
     try {
       const response = await axios.get(
@@ -94,6 +99,7 @@ class StravaService {
       throw error;
     }
   }
+
 
   formatActivity(activity: StravaActivity): string {
     const distanceKm = (activity.distance / 1000).toFixed(2);

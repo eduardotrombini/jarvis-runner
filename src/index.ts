@@ -1,43 +1,61 @@
 import 'dotenv/config';
-import { Bot } from 'grammy';
+import { Bot, Context } from 'grammy';
 import { run } from '@grammyjs/runner';
 import { setupCommands } from './bot/commands';
 import { setupCallbacks } from './bot/callbacks';
 import { startScheduler } from './scheduler';
 import { logger } from './utils/logger';
+import { startWebhookServer } from './server/webhook';
 
-const bot = new Bot(process.env.TELEGRAM_BOT_TOKEN || '');
+const botToken = process.env.TELEGRAM_BOT_TOKEN;
+if (!botToken) {
+  logger.error('TELEGRAM_BOT_TOKEN is missing!');
+  process.exit(1);
+}
 
+const bot = new Bot<Context>(botToken);
+
+// Error handling
 bot.catch((err) => {
   logger.error('Bot error:', err);
 });
 
-bot.on('message', async (ctx) => {
-  logger.info(`Received message from ${ctx.from?.id}: ${ctx.message?.text}`);
-});
-
-setupCommands(bot);
-setupCallbacks(bot);
-
+// Middleware (order matters - place logging at the top)
 bot.use(async (ctx, next) => {
-  logger.info(`Update from ${ctx.from?.id} - type: ${ctx.update.message ? 'message' : 'other'}`);
+  const from = ctx.from?.id;
+  const type = ctx.update.message ? 'message' : (ctx.update.callback_query ? 'callback' : 'other');
+  const text = ctx.message?.text || ctx.callbackQuery?.data || '';
+  
+  logger.info(`Update from ${from} - type: ${type}${text ? ` - content: ${text}` : ''}`);
   await next();
 });
+
+// Setup handlers
+setupCommands(bot);
+setupCallbacks(bot);
 
 async function main() {
   logger.info('Starting Jarvis Runner...');
   
-  await bot.init();
-  logger.info(`Bot initialized as @${bot.botInfo.username}`);
-  
-  run(bot);
-  
-  startScheduler();
-  
-  logger.info(`Jarvis Runner is running with long polling!`);
+  try {
+    await bot.init();
+    logger.info(`Bot initialized as @${bot.botInfo.username}`);
+    
+    // Start long polling
+    run(bot);
+    
+    // Start webhook server for Strava callbacks
+    const port = parseInt(process.env.PORT || '3001');
+    startWebhookServer(bot, port);
+    
+    // Start CRON scheduler
+    startScheduler(bot);
+    
+    logger.info(`Jarvis Runner is fully operational!`);
+  } catch (err) {
+    logger.error('Initialization failed:', err);
+    process.exit(1);
+  }
 }
 
-main().catch((err) => {
-  logger.error('Fatal error:', err);
-  process.exit(1);
-});
+main();

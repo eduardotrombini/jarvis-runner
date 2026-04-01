@@ -14,6 +14,7 @@ import {
   getUserCount
 } from '../database/userService';
 import { setPendingAuth } from '../server/webhook';
+import { logger } from '../utils/logger';
 
 const waitingForName = new Set<number>();
 
@@ -84,10 +85,19 @@ export function setupCommands(bot: Bot<Context>) {
   });
 
   bot.command('mytrainings', async (ctx) => {
+    const telegramId = ctx.from?.id;
+    if (!telegramId) return;
+
     await ctx.reply('🔄 Buscando seus treinos...');
     
     try {
-      const activities = await stravaService.getActivities(7);
+      const user = await getUserByTelegramId(telegramId);
+      if (!user?.refresh_token) {
+        await ctx.reply('❌ Você ainda não conectou o Strava. Use /connectstrava primeiro.');
+        return;
+      }
+
+      const activities = await stravaService.getActivities(7, user.refresh_token);
       
       if (activities.length === 0) {
         await ctx.reply('Nenhum treino encontrado nos últimos 7 dias.');
@@ -101,31 +111,52 @@ export function setupCommands(bot: Bot<Context>) {
 
       await ctx.reply(message);
     } catch (error) {
-      await ctx.reply('❌ Erro ao buscar treinos. Tente /connectstrava primeiro.');
+      logger.error('Mytrainings error:', error);
+      await ctx.reply('❌ Erro ao buscar treinos. Se o problema persistir, tente /connectstrava novamente.');
     }
   });
 
   bot.command('weekly', async (ctx) => {
+    const telegramId = ctx.from?.id;
+    if (!telegramId) return;
+
     await ctx.reply('🔄 Buscando resumo semanal...');
     
     try {
-      const activities = await stravaService.getActivities(7);
+      const user = await getUserByTelegramId(telegramId);
+      if (!user?.refresh_token) {
+        await ctx.reply('❌ Conecte seu Strava primeiro com /connectstrava');
+        return;
+      }
+
+      const activities = await stravaService.getActivities(7, user.refresh_token);
       const message = stravaService.formatWeeklySummary(activities);
       await ctx.reply(message);
     } catch (error) {
-      await ctx.reply('❌ Erro ao buscar dados. Tente /connectstrava primeiro.');
+      logger.error('Weekly error:', error);
+      await ctx.reply('❌ Erro ao buscar dados.');
     }
   });
 
   bot.command('monthly', async (ctx) => {
+    const telegramId = ctx.from?.id;
+    if (!telegramId) return;
+
     await ctx.reply('🔄 Buscando resumo mensal...');
     
     try {
-      const activities = await stravaService.getActivities(30);
+      const user = await getUserByTelegramId(telegramId);
+      if (!user?.refresh_token) {
+        await ctx.reply('❌ Conecte seu Strava primeiro com /connectstrava');
+        return;
+      }
+
+      const activities = await stravaService.getActivities(30, user.refresh_token);
       const message = stravaService.formatMonthlySummary(activities);
       await ctx.reply(message);
     } catch (error) {
-      await ctx.reply('❌ Erro ao buscar dados. Tente /connectstrava primeiro.');
+      logger.error('Monthly error:', error);
+      await ctx.reply('❌ Erro ao buscar dados.');
     }
   });
 
@@ -151,9 +182,16 @@ export function setupCommands(bot: Bot<Context>) {
     const telegramId = ctx.from?.id;
     if (!telegramId) return;
     
-    await ctx.reply('🔄 Analisando seus treinos...');
+    await ctx.reply('🔄 Sincronizando e analisando seus treinos...');
     
     try {
+      const user = await getUserByTelegramId(telegramId);
+      if (user?.refresh_token && user.id) {
+        // Sync first
+        const activities = await stravaService.getActivities(30, user.refresh_token);
+        await saveActivities(user.id, activities);
+      }
+
       const analysis = await analyzeUserTraining(telegramId, 30);
       
       if (!analysis) {
@@ -164,8 +202,8 @@ export function setupCommands(bot: Bot<Context>) {
       const message = formatAnalysisMessage(analysis);
       await ctx.reply(message);
     } catch (error) {
-      console.error('Analyze error:', error);
-      await ctx.reply('❌ Erro ao analisar. Use /connectstrava primeiro.');
+      logger.error('Analyze error:', error);
+      await ctx.reply('❌ Erro ao analisar. Verifique sua conexão com o Strava.');
     }
   });
 
@@ -173,9 +211,15 @@ export function setupCommands(bot: Bot<Context>) {
     const telegramId = ctx.from?.id;
     if (!telegramId) return;
     
-    await ctx.reply('🔄 Gerando plano personalizado...');
+    await ctx.reply('🔄 Gerando seu plano personalizado...');
     
     try {
+      const user = await getUserByTelegramId(telegramId);
+      if (user?.refresh_token && user.id) {
+        const activities = await stravaService.getActivities(30, user.refresh_token);
+        await saveActivities(user.id, activities);
+      }
+
       const analysis = await analyzeUserTraining(telegramId, 30);
       
       if (!analysis) {
@@ -188,8 +232,8 @@ export function setupCommands(bot: Bot<Context>) {
       
       await ctx.reply(analysisMsg + planMsg);
     } catch (error) {
-      console.error('Myplan error:', error);
-      await ctx.reply('❌ Erro ao gerar plano. Use /connectstrava primeiro.');
+      logger.error('Myplan error:', error);
+      await ctx.reply('❌ Erro ao gerar plano personalizado.');
     }
   });
 

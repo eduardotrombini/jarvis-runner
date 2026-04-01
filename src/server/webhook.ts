@@ -94,7 +94,7 @@ export function startWebhookServer(bot: Bot, port: number = 3001) {
         expires_at,
       });
 
-      const activities = await stravaService.getActivities(30);
+      const activities = await stravaService.getActivities(30, refresh_token);
       const user = await getUserByTelegramId(telegramId);
       if (user?.id) {
         const { saveActivities } = await import('../database/userService');
