@@ -23,33 +23,8 @@ jobs:
             sudo git config --global --add safe.directory /opt/jarvis-runner
             cd /opt/jarvis-runner
             
-            # Criar diretórios nginx
-            sudo mkdir -p nginx/conf nginx/ssl nginx/data
-            
-            # Copiar configuração nginx
-            sudo cp nginx/conf/default.conf nginx/conf/
-            
-            # Gerar SSL com certbot (ou auto-signed se primeiro deploy)
-            if [ ! -f nginx/ssl/cert.pem ]; then
-              # Setup certbot se não existe
-              if ! command -v certbot &> /dev/null; then
-                sudo apt-get update -qq
-                sudo apt-get install -y -qq certbot python3-certbot-nginx
-              fi
-            
-              # Setup nginx temporário para certbot
-              echo "server { listen 80; server_name ${{ secrets.DOMAIN }}; }" | sudo tee /tmp/certbot.conf
-              sudo cp /tmp/certbot.conf /etc/nginx/sites-available/default
-              sudo nginx -t && sudo nginx -s reload || true
-              
-              # Obter certificado
-              sudo certbot --nginx -d ${{ secrets.DOMAIN }} --register-unsafely-without-email --agree-tos --non-interactive || true
-              
-              # Copiar certificados
-              sudo cp /etc/letsencrypt/live/${{ secrets.DOMAIN }}/fullchain.pem nginx/ssl/cert.pem
-              sudo cp /etc/letsencrypt/live/${{ secrets.DOMAIN }}/privkey.pem nginx/ssl/key.pem
-              sudo chmod 644 nginx/ssl/*.pem
-            fi
+            # Parar nginx docker se estiver rodando
+            sudo docker stop nginx 2>/dev/null || true
             
             # Criar .env com HTTPS
             sudo tee .env > /dev/null << 'EOF'
@@ -59,10 +34,33 @@ jobs:
             STRAVA_REFRESH_TOKEN=${{ secrets.STRAVA_REFRESH_TOKEN }}
             SUPABASE_URL=${{ secrets.SUPABASE_URL }}
             SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
-            CALLBACK_URL=https://${{ secrets.DOMAIN }}
+            CALLBACK_URL=https://jarvisbot.sytes.net
             PORT=3001
             NODE_ENV=production
             EOF
+            
+            # Configurar nginx do sistema para proxy
+            sudo tee /etc/nginx/sites-available/jarvis > /dev/null << 'NGINX'
+            server {
+                listen 80;
+                server_name jarvisbot.sytes.net;
+
+                location / {
+                    proxy_pass http://localhost:3001;
+                    proxy_http_version 1.1;
+                    proxy_set_header Upgrade $http_upgrade;
+                    proxy_set_header Connection 'upgrade';
+                    proxy_set_header Host $host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                    proxy_cache_bypass $http_upgrade;
+                }
+            }
+            NGINX
+            
+            sudo ln -sf /etc/nginx/sites-available/jarvis /etc/nginx/sites-enabled/
+            sudo nginx -t && sudo systemctl reload nginx
             
             sudo git pull origin master
             sudo docker compose -f docker-compose.prd.yml down --remove-orphans || true
