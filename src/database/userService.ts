@@ -226,3 +226,18 @@ export async function getSubscribedUsers(): Promise<User[]> {
   return data.map(d => d.user).filter(Boolean) as User[];
 }
 
+export async function getUserByAthleteId(athleteId: string): Promise<User | null> {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('strava_athlete_id', athleteId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    logger.error('Error getting user by athlete ID:', error);
+  }
+
+  return data || null;
+}
+
+

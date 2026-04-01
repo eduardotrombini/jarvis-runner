@@ -89,6 +89,24 @@ class StravaService {
     }
   }
 
+  async getActivityById(activityId: number, refreshToken: string): Promise<StravaActivity> {
+    const accessToken = await this.getAccessToken(refreshToken);
+
+    try {
+      const response = await axios.get(`${STRAVA_API}/activities/${activityId}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      return response.data;
+    } catch (error: any) {
+      logger.error(`Error fetching activity ${activityId}:`, error.response?.data || error.message);
+      throw error;
+    }
+  }
+
+
   async getAthleteStats(athleteId: string, refreshToken?: string) {
     const accessToken = await this.getAccessToken(refreshToken);
 

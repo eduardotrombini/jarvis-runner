@@ -3,6 +3,8 @@ import axios from 'axios';
 import { Bot } from 'grammy';
 import { saveUser, getUserByTelegramId } from '../database/userService';
 import { stravaService } from '../strava/strava';
+import { logger } from '../utils/logger';
+
 
 const app = express();
 app.use(express.json());
@@ -146,6 +148,67 @@ export function startWebhookServer(bot: Bot, port: number = 3001) {
   });
 
 
+  app.get('/strava/webhook', (req, res) => {
+    // Strava webhooks verification
+    const { 'hub.mode': mode, 'hub.challenge': challenge, 'hub.verify_token': verifyToken } = req.query;
+    const STRAVA_VERIFY_TOKEN = process.env.STRAVA_VERIFY_TOKEN || 'strava';
+
+    if (mode === 'subscribe' && verifyToken === STRAVA_VERIFY_TOKEN) {
+      console.log('✅ Strava webhook subscription verified!');
+      res.json({ 'hub.challenge': challenge });
+    } else {
+      res.sendStatus(403);
+    }
+  });
+
+  app.post('/strava/webhook', async (req, res) => {
+    // Respond quickly to Strava (they give 2 seconds)
+    res.sendStatus(200);
+
+    const { object_type, aspect_type, object_id, owner_id } = req.body;
+
+    // We only care about new activities
+    if (object_type === 'activity' && aspect_type === 'create') {
+      try {
+        const { getUserByAthleteId, saveActivities } = await import('../database/userService');
+        const user = await getUserByAthleteId(owner_id.toString());
+
+        if (user && user.refresh_token) {
+          logger.info(`Processing new activity ${object_id} for user ${user.firstname}`);
+          
+          // Wait a bit for Strava to fully process the data
+          await new Promise(resolve => setTimeout(resolve, 5000));
+
+          const activity = await stravaService.getActivityById(object_id, user.refresh_token);
+          
+          // Save locally
+          if (user.id) {
+            await saveActivities(user.id, [activity]);
+          }
+
+          // Format message
+          const distance = (activity.distance / 1000).toFixed(2);
+          const time = Math.round(activity.moving_time / 60);
+          
+          const pace = (activity.moving_time / 60) / (activity.distance / 1000);
+          const paceMin = Math.floor(pace);
+          const paceSec = Math.round((pace - paceMin) * 60);
+
+          let msg = `🏃 *Novo Treino Registrado!* 🏃\n\n`;
+          msg += `📝 *${activity.name}*\n`;
+          msg += `📏 Distância: ${distance} km\n`;
+          msg += `⏱️ Tempo: ${time} min\n`;
+          msg += `⚡ Ritmo Médio: ${paceMin}:${paceSec.toString().padStart(2, '0')} min/km\n\n`;
+          msg += `🤖 Use /analyze para ver meu veredito!`;
+
+          await bot.api.sendMessage(user.telegram_id, msg, { parse_mode: 'Markdown' });
+        }
+      } catch (error) {
+        logger.error('Error handling Strava webhook event:', error);
+      }
+    }
+  });
+
   app.get('/health', (req, res) => {
     res.json({ status: 'ok' });
   });
@@ -156,6 +219,7 @@ export function startWebhookServer(bot: Bot, port: number = 3001) {
 
   return app;
 }
+
 
 export function setPendingAuth(code: string, telegramId: number) {
   pendingAuth.set(code, telegramId);
