@@ -257,8 +257,15 @@ export function setupCommands(bot: Bot<Context>) {
     if (!telegramId) return;
     
     const clientId = process.env.STRAVA_CLIENT_ID;
-    const callbackUrl = process.env.CALLBACK_URL || 'http://jarvisbot.sytes.net';
+    let callbackUrl = process.env.CALLBACK_URL || 'http://jarvisbot.sytes.net:3001';
+    
+    // Ensure callback path is correct
+    if (!callbackUrl.includes('/strava/callback')) {
+      callbackUrl = callbackUrl.replace(/\/$/, '') + '/strava/callback';
+    }
+
     const authUrl = `https://www.strava.com/oauth/authorize?client_id=${clientId}&response_type=code&redirect_uri=${encodeURIComponent(callbackUrl)}&approval_prompt=auto&scope=read,activity:read_all&state=${telegramId}`;
+
     
     setPendingAuth(`pending_${telegramId}`, telegramId);
     
