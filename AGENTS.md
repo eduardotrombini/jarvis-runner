@@ -27,9 +27,12 @@ npm run lint
 - STRAVA_REFRESH_TOKEN
 - SUPABASE_URL
 - SUPABASE_KEY
+- CALLBACK_URL
+- STRAVA_VERIFY_TOKEN
 
 ## Key Files
 - src/index.ts - Entry point
 - src/bot/commands.ts - Telegram commands
 - src/scheduler.ts - Training scheduler
 - src/strava/strava.ts - Strava API integration
+- src/server/webhook.ts - OAuth and Strava webhooks

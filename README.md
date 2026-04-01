@@ -66,8 +66,21 @@ npm run dev
 1. Acesse https://www.strava.com/settings/api
 2. Preencha:
    - **Application Name**: Jarvis Runner
-   - **Authorization Callback Domain**: seu-dominio.com
+   - **Authorization Callback Domain**: jarvisbot.sytes.net
 3. Copie Client ID e Client Secret
+
+## Webhooks Strava (Real-time)
+
+Jarvis agora avisa sobre treinos assim que eles são salvos! Para ativar:
+
+```bash
+curl -X POST https://www.strava.com/api/v3/push_subscriptions \
+  -F client_id=SEU_CLIENT_ID \
+  -F client_secret=SEU_CLIENT_SECRET \
+  -F callback_url=http://jarvisbot.sytes.net:3001/strava/webhook \
+  -F verify_token=strava
+```
+
 
 ## Configuração Telegram Bot
 
@@ -124,11 +137,14 @@ jarvis-runner/
 
 ## Próximos Passos
 
-- [ ] Configurar OAuth com domain definitivo (PRD)
+- [x] Configurar OAuth com domain definitivo (PRD)
+- [x] Implementar notificações em tempo real (Strava Webhooks)
+- [x] Implementar envio diário automático de treino (Scheduler)
+- [ ] **Integrar IA de alto nível para análise de treinos e perfil** (Próximo Passo)
+- [ ] Adicionar mais métricas de análise (Zonas de treinamento)
 - [ ] Implementar Telegram Bot API webhook (polling → webhook)
-- [ ] Adicionar mais métricas de análise (Zona de treinamento)
-- [ ] Implementar推送 diária automática de treino
 - [ ] Adicionar testes unitários
+
 
 ## Licença
 
