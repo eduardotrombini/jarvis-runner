@@ -47,11 +47,14 @@ export function setupCommands(bot: Bot<Context>) {
     }
   });
 
-  bot.on('message:text', async (ctx) => {
+  bot.on('message:text', async (ctx, next) => {
     const telegramId = ctx.from?.id;
-    if (!telegramId || !waitingForName.has(telegramId)) return;
+    if (!telegramId || !waitingForName.has(telegramId)) {
+      return await next();
+    }
     
     const name = ctx.message.text.trim();
+
     if (name.length < 2 || name.length > 50) {
       await ctx.reply('Por favor, digite um nome válido (2-50 caracteres).');
       return;
