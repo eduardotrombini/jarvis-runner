@@ -14,7 +14,7 @@ services:
       - STRAVA_REFRESH_TOKEN=${STRAVA_REFRESH_TOKEN}
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_KEY=${SUPABASE_KEY}
-      - CALLBACK_URL=${CALLBACK_URL:-https://jarvisbot.sytes.net}
+      - CALLBACK_URL=${CALLBACK_URL:-http://jarvisbot.sytes.net:3001}
     restart: always
 
 networks:
