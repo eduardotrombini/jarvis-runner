@@ -3,8 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "80:3001"
+    expose:
+      - "3001"
     environment:
       - NODE_ENV=production
       - PORT=3001
@@ -14,7 +14,20 @@ services:
       - STRAVA_REFRESH_TOKEN=${STRAVA_REFRESH_TOKEN}
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_KEY=${SUPABASE_KEY}
-      - CALLBACK_URL=${CALLBACK_URL}
+      - CALLBACK_URL=https://${DOMAIN}
+    restart: always
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./nginx/data:/var/www/html
+    depends_on:
+      - jarvis
     restart: always
 
 networks:

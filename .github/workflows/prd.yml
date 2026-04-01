@@ -22,6 +22,36 @@ jobs:
           script: |
             sudo git config --global --add safe.directory /opt/jarvis-runner
             cd /opt/jarvis-runner
+            
+            # Criar diretórios nginx
+            sudo mkdir -p nginx/conf nginx/ssl nginx/data
+            
+            # Copiar configuração nginx
+            sudo cp nginx/conf/default.conf nginx/conf/
+            
+            # Gerar SSL com certbot (ou auto-signed se primeiro deploy)
+            if [ ! -f nginx/ssl/cert.pem ]; then
+              # Setup certbot se não existe
+              if ! command -v certbot &> /dev/null; then
+                sudo apt-get update -qq
+                sudo apt-get install -y -qq certbot python3-certbot-nginx
+              fi
+            
+              # Setup nginx temporário para certbot
+              echo "server { listen 80; server_name ${{ secrets.DOMAIN }}; }" | sudo tee /tmp/certbot.conf
+              sudo cp /tmp/certbot.conf /etc/nginx/sites-available/default
+              sudo nginx -t && sudo nginx -s reload || true
+              
+              # Obter certificado
+              sudo certbot --nginx -d ${{ secrets.DOMAIN }} --register-unsafely-without-email --agree-tos --non-interactive || true
+              
+              # Copiar certificados
+              sudo cp /etc/letsencrypt/live/${{ secrets.DOMAIN }}/fullchain.pem nginx/ssl/cert.pem
+              sudo cp /etc/letsencrypt/live/${{ secrets.DOMAIN }}/privkey.pem nginx/ssl/key.pem
+              sudo chmod 644 nginx/ssl/*.pem
+            fi
+            
+            # Criar .env com HTTPS
             sudo tee .env > /dev/null << 'EOF'
             TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}
             STRAVA_CLIENT_ID=${{ secrets.STRAVA_CLIENT_ID }}
@@ -29,12 +59,12 @@ jobs:
             STRAVA_REFRESH_TOKEN=${{ secrets.STRAVA_REFRESH_TOKEN }}
             SUPABASE_URL=${{ secrets.SUPABASE_URL }}
             SUPABASE_KEY=${{ secrets.SUPABASE_KEY }}
-            CALLBACK_URL=http://jarvisbot.sytes.net
+            CALLBACK_URL=https://${{ secrets.DOMAIN }}
             PORT=3001
             NODE_ENV=production
             EOF
+            
             sudo git pull origin master
-            sudo docker ps -a --filter "name=jarvis" -q | xargs -r sudo docker rm -f || true
             sudo docker compose -f docker-compose.prd.yml down --remove-orphans || true
             sudo docker compose -f docker-compose.prd.yml build --no-cache
             sudo docker compose -f docker-compose.prd.yml up -d
