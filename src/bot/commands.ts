@@ -10,7 +10,8 @@ import {
   isUserSubscribed,
   saveActivities,
   createUserOnStart,
-  updateUserName
+  updateUserName,
+  getUserCount
 } from '../database/userService';
 import { setPendingAuth } from '../server/webhook';
 
@@ -264,6 +265,15 @@ export function setupCommands(bot: Bot<Context>) {
     } catch (error: any) {
       console.error('Auth error:', error.response?.data || error.message);
       await ctx.reply('❌ Erro ao conectar Strava. Verifique o código e tente novamente.');
+    }
+  });
+
+  bot.command('users', async (ctx) => {
+    try {
+      const count = await getUserCount();
+      await ctx.reply(`📊 Total de usuários: ${count}`);
+    } catch (error) {
+      await ctx.reply('❌ Erro ao buscar usuários.');
     }
   });
 }

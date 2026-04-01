@@ -116,6 +116,19 @@ export async function saveActivities(userId: number, activities: StravaActivity[
   }
 }
 
+export async function getUserCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from('users')
+    .select('*', { count: 'exact', head: true });
+
+  if (error) {
+    logger.error('Error getting user count:', error);
+    throw error;
+  }
+
+  return count || 0;
+}
+
 export async function getUserActivities(telegramId: number, daysBack: number = 30): Promise<Activity[]> {
   const user = await getUserByTelegramId(telegramId);
   if (!user) return [];
