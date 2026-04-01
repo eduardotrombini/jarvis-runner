@@ -26,15 +26,21 @@ async function handleStravaCallback(bot: Bot, code: string, state?: string): Pro
   try {
     const clientId = process.env.STRAVA_CLIENT_ID;
     const clientSecret = process.env.STRAVA_CLIENT_SECRET;
+    
+    // Construct the same redirect_uri used in the initial auth link
+    const callbackUrl = process.env.CALLBACK_URL || 'http://jarvisbot.sytes.net:3001';
+    const redirectUri = callbackUrl.includes('/strava/callback') ? callbackUrl : callbackUrl.replace(/\/$/, '') + '/strava/callback';
 
     const response = await axios.post('https://www.strava.com/oauth/token', {
       client_id: clientId,
       client_secret: clientSecret,
       code: code,
       grant_type: 'authorization_code',
+      redirect_uri: redirectUri, // This MUST match the original one
     });
 
     const { athlete, access_token, refresh_token, expires_at } = response.data;
+
 
     await saveUser({
       telegram_id: telegramId,
