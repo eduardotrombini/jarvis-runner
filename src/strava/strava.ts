@@ -37,12 +37,19 @@ class StravaService {
   }
 
   async getAccessToken(refreshToken?: string): Promise<string> {
-    try {
-      const rt = refreshToken || this.refreshToken;
-      if (!rt) {
-        throw new Error('No refresh token provided');
-      }
+    const rt = refreshToken || this.refreshToken;
+    
+    if (!this.clientId || !this.clientSecret) {
+      logger.error('Strava configuration missing: CLIENT_ID or CLIENT_SECRET not found in env');
+      throw new Error('Configuração do Strava ausente no servidor. Verifique o .env');
+    }
 
+    if (!rt) {
+      logger.error('Attempted Strava refresh without a refresh token');
+      throw new Error('Token de refresh não fornecido. Conecte sua conta novamente.');
+    }
+
+    try {
       const response = await axios.post('https://www.strava.com/oauth/token', {
         client_id: this.clientId,
         client_secret: this.clientSecret,
@@ -51,13 +58,15 @@ class StravaService {
       });
 
       return response.data.access_token;
-    } catch (error) {
-      logger.error('Error refreshing Strava token:', error);
-      throw error;
+    } catch (error: any) {
+      const errorData = error.response?.data;
+      logger.error('Error refreshing Strava token:', errorData || error.message);
+      throw new Error(`Falha na autorização do Strava: ${errorData?.message || 'Token inválido'}`);
     }
   }
 
   async getActivities(daysBack: number = 7, refreshToken?: string): Promise<StravaActivity[]> {
+    logger.info(`Syncing activities (daysBack: ${daysBack}) for ${refreshToken ? 'user-specific token' : 'global token'}`);
     const accessToken = await this.getAccessToken(refreshToken);
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - daysBack);
