@@ -41,8 +41,13 @@ async function main() {
     await bot.init();
     logger.info(`Bot initialized as @${bot.botInfo.username}`);
     
+    // Ensure webhook is removed before starting long polling
+    await bot.api.deleteWebhook({ drop_pending_updates: true });
+    logger.info('Cleaned up previous webhooks');
+
     // Start long polling
     run(bot);
+    logger.info('Long polling runner started');
     
     // Start webhook server for Strava callbacks
     const port = parseInt(process.env.PORT || '3001');
@@ -51,7 +56,8 @@ async function main() {
     // Start CRON scheduler
     startScheduler(bot);
     
-    logger.info(`Jarvis Runner is fully operational!`);
+    logger.info(`Jarvis Runner is fully operational and listening for updates!`);
+
   } catch (err) {
     logger.error('Initialization failed:', err);
     process.exit(1);
